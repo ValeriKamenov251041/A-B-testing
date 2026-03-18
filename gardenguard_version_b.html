@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GardenGuard Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-900: #1B5E20;
+    --green-700: #2E7D32;
+    --green-600: #388E3C;
+    --green-500: #43A047;
+    --green-400: #66BB6A;
+    --green-200: #A5D6A7;
+    --green-100: #C8E6C9;
+    --green-50: #E8F5E9;
+    --red-600: #E53935;
+    --red-50: #FFEBEE;
+    --amber-600: #F9A825;
+    --amber-50: #FFF8E1;
+    --gray-900: #212121;
+    --gray-700: #424242;
+    --gray-600: #616161;
+    --gray-400: #9E9E9E;
+    --gray-300: #BDBDBD;
+    --gray-200: #E0E0E0;
+    --gray-100: #EEEEEE;
+    --gray-50: #FAFAFA;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 999px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: linear-gradient(145deg, #e8ece8 0%, #d3dbd3 50%, #c4cec4 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 393px;
+    height: 852px;
+    background: #fff;
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 0 0 2px #1a1a1a,
+      0 0 0 5px #333,
+      0 0 0 6px #555,
+      0 30px 70px rgba(0,0,0,0.25),
+      0 10px 25px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    transform-origin: top center;
+  }
+
+  /* Scale phone to fit viewport on smaller screens */
+  @media (max-height: 920px) {
+    .phone {
+      transform: scale(0.85);
+      margin-bottom: -100px;
+    }
+  }
+  @media (max-height: 800px) {
+    .phone {
+      transform: scale(0.75);
+      margin-bottom: -180px;
+    }
+  }
+  @media (max-height: 700px) {
+    .phone {
+      transform: scale(0.65);
+      margin-bottom: -260px;
+    }
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 28px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-900);
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+  }
+  .status-bar .time { font-weight: 700; font-size: 15px; }
+  .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+
+  /* Dynamic Island */
+  .dynamic-island {
+    width: 126px;
+    height: 36px;
+    border-radius: 20px;
+    background: #000;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+  }
+
+  /* Screen content area */
+  .screen-area {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Each screen */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .screen.entering { opacity: 1; transform: translateX(0); }
+  .screen.exiting { opacity: 0; transform: translateX(-20px); }
+  .screen.hidden { opacity: 0; transform: translateX(20px); pointer-events: none; }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    height: 82px;
+    background: #fff;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding-top: 8px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    transition: transform 0.15s ease;
+  }
+  .nav-item:active { transform: scale(0.92); }
+  .nav-item .nav-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-400);
+    transition: color 0.2s;
+  }
+  .nav-item.active .nav-label { color: var(--green-700); font-weight: 700; }
+  .nav-item svg { transition: all 0.2s; }
+
+  /* Scan button (center nav) */
+  .scan-nav-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green-700), var(--green-500));
+    border: 4px solid #fff;
+    box-shadow: 0 4px 16px rgba(46,125,50,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-top: -18px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .scan-nav-btn:active {
+    transform: scale(0.93);
+    box-shadow: 0 2px 8px rgba(46,125,50,0.3);
+  }
+
+  /* Shared UI elements */
+  .card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    border: 1px solid var(--gray-100);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-primary {
+    width: 100%;
+    height: 52px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: linear-gradient(135deg, var(--green-700) 0%, var(--green-500) 100%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(46,125,50,0.3);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(46,125,50,0.2);
+  }
+
+  .btn-outline {
+    width: 100%;
+    height: 48px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--green-700);
+    background: #fff;
+    color: var(--green-700);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-outline:active { background: var(--green-50); transform: scale(0.97); }
+
+  .back-btn {
+    background: none;
+    border: none;
+    color: var(--green-700);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 14px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+  }
+
+  /* Confidence bar */
+  .confidence-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--gray-100);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--green-500), var(--green-700));
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Animations */
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-in {
+    animation: fadeUp 0.35s ease both;
+  }
+  .delay-1 { animation-delay: 0.06s; }
+  .delay-2 { animation-delay: 0.12s; }
+  .delay-3 { animation-delay: 0.18s; }
+  .delay-4 { animation-delay: 0.24s; }
+  .delay-5 { animation-delay: 0.3s; }
+
+  /* Scrollbar */
+  .scroll-area {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gray-300) transparent;
+  }
+  .scroll-area::-webkit-scrollbar { width: 3px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+  /* Instructions below phone */
+  .instructions {
+    margin-top: 16px;
+    text-align: center;
+    max-width: 393px;
+    color: var(--gray-600);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* Heatmap overlay */
+  .heatmap-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+    background: radial-gradient(ellipse 55% 50% at 45% 55%, rgba(255,0,0,0.35) 0%, rgba(255,165,0,0.2) 40%, rgba(255,255,0,0.08) 65%, transparent 80%);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  /* Product row */
+  .product-row {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-100);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: #fff;
+  }
+  .product-row:hover { background: var(--green-50); border-color: var(--green-200); }
+  .product-row:active { transform: scale(0.98); }
+
+  /* Plant chip */
+  .plant-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+    padding: 4px;
+  }
+  .plant-chip:active { transform: scale(0.93); }
+  .plant-chip-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    background: var(--gray-50);
+  }
+  .plant-chip.selected .plant-chip-icon {
+    background: var(--green-50);
+    border-color: var(--green-700);
+    box-shadow: 0 2px 8px rgba(46,125,50,0.15);
+  }
+  .plant-chip-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-600);
+    transition: all 0.2s;
+  }
+  .plant-chip.selected .plant-chip-label {
+    color: var(--green-700);
+    font-weight: 700;
+  }
+
+  /* Severity badge */
+  .severity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .severity-high { background: var(--red-50); color: var(--red-600); }
+  .severity-medium { background: var(--amber-50); color: var(--amber-600); }
+
+  /* Toggle switch */
+  .toggle-track {
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease;
+  }
+  .toggle-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background: #fff;
+    position: absolute;
+    top: 2px;
+    transition: left 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--green-100);
+    border-top-color: var(--green-700);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* Loading progress steps */
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+  }
+  .loading-step .step-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+  .loading-step .step-label {
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  /* Image comparison slider */
+  .comparison-container {
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    cursor: ew-resize;
+    touch-action: none;
+    background: #1a1a1a;
+  }
+  .comparison-container img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .comparison-slider-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #fff;
+    z-index: 5;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(0,0,0,0.4);
+  }
+  .comparison-slider-handle {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .comparison-label {
+    position: absolute;
+    top: 10px;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    z-index: 4;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .comparison-label-left {
+    left: 10px;
+    background: rgba(255,255,255,0.85);
+    color: var(--gray-700);
+  }
+  .comparison-label-right {
+    right: 10px;
+    background: rgba(46,125,50,0.85);
+    color: #fff;
+  }
+  .view-tabs {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-tab {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: var(--radius-full);
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+  .view-tab.active {
+    background: #fff;
+    color: var(--green-700);
+    box-shadow: var(--shadow-sm);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <!-- Dynamic Island -->
+  <div class="dynamic-island"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar" id="statusBar">
+    <span class="time" id="statusTime">9:41</span>
+    <span class="icons">
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M1 8h2v4H1zM5 5h2v7H5zM9 3h2v9H9zM13 0h2v12h-2z" fill="currentColor"/></svg>
+      <svg width="15" height="12" viewBox="0 0 15 12"><path d="M7.5 3.6c1.6 0 3 .6 4.1 1.7l1.1-1.1A7.8 7.8 0 007.5 1.5c-2 0-3.8.7-5.1 1.7l1.1 1.1A5.6 5.6 0 017.5 3.6zm0 3c.9 0 1.8.4 2.4 1l1.1-1.1A5 5 0 007.5 4.8c-1.4 0-2.6.5-3.5 1.4l1.1 1A3.4 3.4 0 017.5 6.6zm0 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" fill="currentColor"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="21" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="1"/><rect x="22" y="4" width="2" height="4" rx="0.5" fill="currentColor" opacity="0.4"/><rect x="1.5" y="2.5" width="15" height="7" rx="1" fill="currentColor"/></svg>
+    </span>
+  </div>
+
+  <!-- Screen Area -->
+  <div class="screen-area" id="screenArea"></div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-screen="home" id="navHome">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" fill="var(--green-50)" stroke="var(--green-700)"/>
+        <path d="M9 21V14h6v7" stroke="var(--green-700)"/>
+      </svg>
+      <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" data-screen="history" id="navHistory">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 7v5l3 3"/>
+      </svg>
+      <span class="nav-label">History</span>
+    </button>
+    <div style="width: 56px; display: flex; justify-content: center;">
+      <button class="scan-nav-btn" id="navScan">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+          <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M3 17v2a2 2 0 002 2h2M17 21h2a2 2 0 002-2v-2"/>
+          <circle cx="12" cy="12" r="4"/>
+        </svg>
+      </button>
+    </div>
+    <button class="nav-item" data-screen="garden" id="navGarden">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2">
+        <path d="M12 3C7 3 4 7 4 12c0 3 1.5 5.5 4 7h8c2.5-1.5 4-4 4-7 0-5-3-9-8-9z"/>
+        <path d="M12 3v18M8 7c2 2 2 5 0 8M16 7c-2 2-2 5 0 8"/>
+      </svg>
+      <span class="nav-label">Garden</span>
+    </button>
+    <button class="nav-item" data-screen="settings" id="navSettings">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      <span class="nav-label">Settings</span>
+    </button>
+  </div>
+</div>
+
+
+
+<script>
+// ==================== APP STATE ====================
+const SCREENS = { HOME: 'home', CAMERA: 'camera', LOADING: 'loading', RESULT: 'result', HISTORY: 'history', GARDEN: 'garden', SETTINGS: 'settings' };
+let currentScreen = SCREENS.HOME;
+let selectedPlant = 'all';
+let showHeatmap = true;
+
+const LEAF_CLEAN = "data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADgAOADASIAAhEBAxEB/8QAHQAAAQUBAQEBAAAAAAAAAAAABQIDBAYHAQAICf/EADYQAAIBAwMDAwMCBQMFAQEAAAECAwAEEQUSIQYxQRMiURQyYQdxFSNCgaFSkbEkM2LB0TRy/8QAGgEAAgMBAQAAAAAAAAAAAAAAAwQBAgUABv/EACcRAAICAgIBBAIDAQEAAAAAAAECAAMEERIhMQUTIkEUURUjMkJh/9oADAMBAAIRAxEAPwD5zQknNLBI4NJwQO+DSck43DHNInuM6jjMFYU67AoGzk1GU5bcT+MUsbtpJ5+BU8tTpJEgI92AfFcabC7cKTTLZEeRjI+aTnIGQufnNdykGPGUlRzXVkIyB5qMMjg+KcTJPHFdO1F5LHBOKSHbOA1ddcoTnBFNORjAGDXTotpCFPkimvVckH/VXMnt2/8Adcc7iTtwKqZ2tRxCSw3YOBxXgXL4AYse20Z/xXYIXlZIYVLO/CgfNbL+leh6dpTpe31nFdXajO2VRhaWycgUpsyVXkdGZdZdOdQ3A3waNeOCMg+kQD/iuXmha7Yruu9KvIg/bMTHP+K+ubTqJZNM3u8NvFnCqFAxVk017PVrBEuY45njxtJXOB85rGr9aflphoRn8Ya6nxKeneoJYTMui6j6S87hbP8A/KHSLNExhlV4nzgo4wePwa/RrT5kS0MMaR4IwAR7TVM68/TLojq0yjUdMjs7519t1ANvP9u9OfyS+T4lPx2HU+FizKNuMHvz5pDFyuTnvyD4rXP1M/QvqXphmu9KDaxpucq0S/zFH7Cszn0bV4HaOXTb1WJ+1ojmna8uqwdGDZGSDtwbHFKJYHggY/FE7bp3WJsKLCaMnsWUirlpn6dxGx9fUdQAkIz6Y5NXbIRfJlDM63Nu8fuK4zOTgOW+eK0uLoHTWIH1MwPxil3nQWlLHiG9l3459tV/LrH3KgzMctjBBx+a4rFDngVd7noQD3RXf7BqCXvTGoW27hZPjaasuQreDOMDBzt3ZpEj85zUl7G7h/lyQuG+AM03IjKQrROD+VxROX/s7QkdsluT2rm7JJ/IrvqFlAPik4I2jxVh1C7iuOw8mnEb3Lk9uKSDg5Ar2SQ3t4FdK7jjgI2Dg57Zpt8BtpxzTjsstmDjBTg0wjc4I+2ukR3HY4peABnFNRgnkGlncOcf3qZO44AuzmmmxvI2967uLL92T+a9n55/YV2xIjTAocGubmI4FPmNmQ5X9gaZYkNgdx4zVfM4mWDoJ4hr8buAyqNxz4IrUOkb6G4unydx3scf3rIOnJvR1D2gAupFWzQb1rW6B3Yw3NJ5qB11OU6O5stxaLdWUSYYPnPB4q89CvJZWQR/ceBtP+ms66T1ZLwKkko3gcVpHTLwyzbP6mGMV5bIrKdER+h+/MuulTqFKvxnlc1NlkWVjGU2oOVc9iaFrA6wlyxwo7CpbMxtx6YbGKUNjH4/UaI7jxaSItGcHIzjGVoJqIt23SHT7RnJ7mIf/KlS30yBY2VgBwTSza2s1oHWfDv3JNLC1xviYUVj/oTNertMW5nUCNEQnkxoBVYvNHghkMKRZYchiea1nV9Ecwj0JFkdu3PY0KvOlb4WvrTvAu37ue9FpvtsPZgbKq9dCZS0EhmZeFANd1MRW9srLGC3z80jqDQ+obXWmvFuUNiByAeRQ8anaXsqwtOuUOMN3rWFNhXY7me6qDIdzdp6geZUQCkiKHUIna2KlweAtE5NFS/tHVwdvO1hSemdNXSIpnjPf280xToDZMXsIlaksruNy8sKFh8imVjV2Jls4GI/FWm/immjKRt7jkVHstKuI4i0uC1aCPyHxMFyA8zCQBggnkmlk5yATx8ikgnYD2NeGckk5rYheW51SQO9KDbUA8muHdjIHFcBYHAAIqDOAjkUYYsHfau3P703j3D5/wCaU53AFgc9uKnaZpV7fEelFwDjJqOWpUmQlLKTu7D4qfaabqN1H6tvZTSJ4YDirBa6do+mL/1KNdTDnGeKnXnVF41mtpbJHbQDgBV5/vXB1M7UrtroFxu33zLCnn5qfHDZxL6VpAHUf1MOaiyzTzvumZmPgZpyIcFgSpqpO/E7xJsPp42vbI37rXl07T7ondaqg+RSY2cxjAJ55NT0t41VWRm/IoiCDLSFF0tFGy3UN/GpT3bW4zUZj6TldwJz3HaisrtKrKfYVB70OMDFOG3MxxzQ7lDnqQpP3D3T2oSW1wPTYyPx2rWuiOrYLa7i+uXbHnl93IrI45IbGARwIPV2+5qkaVNLKCCxGe+aG+FXavE+ZU3FTsT630rVdOvlVre4WaMjjaf+anWQL2ZG4ZDnsa+dOn9butC9GeCU8d1zwa27oHqax1q0IUbLjGWQmvP5XpbUPv6mpj5gcdybrJFpaSXMzbYVBJc9qzbV+vLe3iCRxTFOTuA471rGt2TXWi3EXp7w6Hg9hXzl1mkkUrRKpCZIwBwKJjej13g6EZOUF8y96T1/pkoiDXTROSOGo3f30+rsrWd8k0eedjcf3rArjT5TaGVZQHHjzT/Rmt6joWq7EdwjEF42bOV+aBkegvSm0MMuVW/UP/qfd69FqRsIIZmg9PJeNfOe1VHRdJlubuNpbaUY5b24Oa+nNDt7DVtOjvRHGyuuQzAHNeu+mbB9skUCFic5QYxR8HNWlfbYRHLpLH4zLtF0ya2sz6qO8RGVHkUuPR2nt2kYFFHI/NaPLpxt1AKqEPGcUGuLL0JPu3RH7sUzUlbMX1MuxWAlBfT33LsyBnk4qXFYHJ3qcD896K6zBIh9GFf5DHIYd6jLp9wuTCzlyOx+afGMu+S+IqLPoz5R2nJyARXtu5gBgjtits6k/QXULK826fqsdxCe7MAuKgwfprHozh7thdMpB2gcf70D+UxyvRmt7Tqf8zPdE6cvNQ/mNmODvubijMekaBA6mZJHK/Jq63VuvpeiFEcajAVeKAajo8jqzIpIbscVRM4WHqDYaEETfwWJv5Fj57tzTb6lL9P9PEqRxZ9+wUiSyeOYxtnP/FOWthK8myKPefIA704vzMoCNSKNsjABcDFeS23vuOcD4qY9vNCxEkDKR3wKdUqkan0XPP8AvRggEguJGWxy4xj+9OyW3px4GOGzUmB29Yt6RCgdsd6k20UcrMSdowe9FCgyhaQljR4hLGrhlPIHmlgTl1wGGOeakWCtErq53cnbgVMjjMgO4d+KMlME9khOpMyJcNvU4JqTdR2Rh9kJ3HgfvS7q0WOB5CMMvIrqZkhX00XGPurmrKQYcGDjbPvw0mSre4580T06RYn2jAH4HeokMTC6cOchjk8dzRK2UE/zFC47HFSlfexJZutQ1bXUPAZCwx2+KKdL6tc2Ovo8MjLyPanxVZKkDek5BbjtxVr6Ta00nbNOqSXDd2bmpvrFg08ErmvxN20bqgXNkovEZFYYLAeKyL9UdHms9c+pt5Fnsrg7kx/SfzVhj6iikVDEFEZ7g+KdvtQ06+H0916bRke0g4xStFJps/rOxGBl7X5zH9QaVWLR27SkD3bBkA0LmaI3EMkYIk7Ffj961m2gs9KS5ggtWuUf3rhcnPgVluqvGNTnDxfTSs5JR+DTV9iN0Y3RZy7mvfolrFxd211p1yTiLlcfFajaSqq7djYORn5rD/0TS9t9TuLv02NpjZz5NbJaTSENuUlT2A8V4D1Ldd54zbQcl8R68PqQH2ggHgCgVxHtkCsAVfjB8UbMbmFmTII8Gq7qcjxykyMRz8UTDz9HiZnZVEh6pavBImQjxyHnHivTxLFtAVRxwfNTIjFc8F1bI457UG1e6nmmMAwoj4BFbtVxHYmS9csOs2oHCz7txzxQmfSo73crEbce44oikgViswG4cCiWkwK8hBX2sK8MMZ0PU9ZXYCO5Qrzo20+sSQDMJ70M6i0K2ikUQxGNU8fNaxqWm5tiyj7ecUGvrO0ubcSybY+NpLHGK0Me8r1FMqkN2JmFzpVi1uJlskL47471VNS0x4nN3bxhWB7LxWqWqWjXM1lb3EEyjOPcDk1W9dsypaLaDzyoFbmPe+xuY1tRWZ/e/wDUR8x4bPNIW23ptiweOc0S1GxnaV5Y1K+n8+RUBJ0dwEHtXup+a2UtUnqK6MRBbEShOC57jFLktkSIgxA7z3FO2co9TezDGMZ+KfLxgnC4APFaVZUwbEiNJpG5AUBzjg/FRnt5YSR6LEj+qrDBc4QH4FJjkXe0eAQeaZAB6EAbD9yttIrkpMDhhiuWKKsPpAHknFHZtMS6fLYTI8VDSz9JmG4HaeMmr+2f+pwcfUizWoVVZxg54NSxbmQhB7+O9OJZ3E659zD/AEivR74Jmikcx+MPRFqAlTYZ6LTQxwxLqvgVNn0+6DZjjyQo2jcO9ejd/QMKLtyPHmuuXaJFRgGAwalsdGHcqH/cnaWbmGVYp0weC3PFS9buLcOscBLSA8hT+KDxicspknO0dhQ1Fv8AT+oItQjX1UL4Kmsh8Qo3JYwnFx3C0esTW0oZI3DngZzwas9jBo+sWivr0CKy4YSY91BNadroq4iWM98KKgi/fBRWPIwxNVXEDnk5ki5qzoTWNC1TS9PjOmWZjkjReCBirRp2qWMyhEmEUgHINfP9lcyxXP8ALkyWowNYuUmRBKTt7j5rOyvQ1c8gdx+r1V1GjN5hiEly2yYMCucA0xe6dDOf5qjA71WugL1b1VK3OyYcFCeKtuoGWKLbIABnlscEV5zJ9NtqbaialWQlwlf1bRIEUy2u6MAeKp3UG+3QPGxPycc1buperNH0KIJql0qFxlFXnI/aqO/V/TV4slzHfRjn7XGKolt6daMi3HrbxLjIkdx6cqNkeaO2KlERkIwO/wAmol700La1IsZWDA8ZNS7TpzVPQV1vBuK9qkWI50JbiyywpD68YkC+wjsazH9ZNEuXsDcWt3LAPsMSdifnNW61u9d0ucW11B9RGD3FROvJI9V6blihtpDd49qAdzTeNXS1oMszMVny/LFe6LcerbXsySKxJJYnJq5dA9UNqMU8V8iyXAHDGoXXPSHUFnob6hNYtCgALDIyao36d3FwuuvvaXb3K/4rZzEqKf1RTs+Zo+uXAklZsBVxwKo81rdXNy/0xCqDzirfryl0B7DHcUCt5IYEkCHk8GkcJiPMUsABgu2cRK0Lklh/k1JW4dsEghRgnivJ6byFXQd85qXDa3NyGFsm5FHPFbNYZvEUYgHuNtforrk+3NTbd0YKwbk80Kv7OaMhniODx2phbiaPHtI9uO1HV3rPcqVV5ZIzPcSBVlWNFOd3zTsNlaREtJdF+ck0HtrgywIpcAv/AE08LdVbLSkAePFOe/y7EWaoy36RPZYUoVRvz5pnXjYzIRNCA+fvAqtwq6uoZ8Dwc05cJNKg9S4HpA/Pemhk6XRECKu44u2OQGFywB7Gitrp7XdpviXDfmhUMljHPH6gbZkZI8mrC2r20JjWKLC48GmKrVbyZNgIgS8gns5FEqcZ4PiuLcNh3OHI4x4FStd1ANGuGXJPCmhlzdySwE7UVTwdtAfgx8zkB1uJm1K4U+p2wTx4NDxdMxO8NljnIFTGYyRqqqAF8mmyYJDmQHI4GKE1W/Bhg4+4mOQwYbeGOeDnxTxumJ9nLHk1DuNPuUVZFO9CfPinxHsIxwSMmhKtimcVUw9oHUL2N6pjcpgc8+a2Dp3qmfVtEkhLRs7IVGTyDjvXz4iFOByS3etX/Tq3iFmu9WDvxkHxWX6gHJGo5i2BOpmXVMd7capcpeSmWaGQhXPIAobLoMCWIuJTKS3fC8VdesNAvNP6ju8QSNbyn1BxnvQFriZ4jA8gCA/ZjtWjj4lbVg6jgu/Zn1NMtyZyqqDD4yKMxXCpBGueQBmqzpOo3txZEyxqzr3x2NI6g640PR9NZ71ysyr/ANsfcTXkKMYbPETQ5B5YbuSLb6pIbANZF+o36mroV0bTT7dJbjPcjhaI236h2F7C7WykgKSR8Cvnrr3WWvup727KkJv4+f8AaqY9ZfI4sNajB4ou491Z131Nq7yC61CRlOcxAnaRXOkk/iKvcWqiO5QYkUDvVKurtpJWIJAY1aP0h1Mad1dbGb/880gWQGtW/G0hKRcXBjqXbV9M1u006GS7tgYyOc8GqtIEMj8MuecEVt36qzRmzSO3A27QQKynplYbi7uBdgZ52A9qBgKLGI1MvJPAwNGytGShXI71P0K9kgSQq5952r+1Dry2KXFzOjqI1fG0VLCtEUQKMBQcr81sV1Oo2sTZlI7kiS+kaZo53IxyKYh23EpyqgHywpGoSFJUkAUjHJNct5vUctNsC+BnFFQsW0ZQrxG1j1/p5tgkkDh2IBOPH4pVlcJJCyToEbH2munUUVFjx7twJJpvUmguskPh+2V7Uy1Sk7SDBb7jE+GY4cqB48VJMbSsqZAjC5oPM04mFuMuMjJAq1WcVv8ATfzPaQmO/NRUgYkNOcgeINmiYodv2jyKe091RVaRWfHzTgCpwCCPGTUadhG/sbecfaKM9QT/ACYMEt5nbsRSEnb3bIApq0iia4AkkcA+PFNNcoATnYw8HvTSXaSFVCuTnwvJpYN8oVRoQ7K8BUKsJATyPNImS1WSKWNPuIDCoh+pWMhIZWLHsBwKXH9VJIoW1YbByT2zTqWa+oI1kw5fGD6YIgBBXgfFDIo1kcKij1AMZqTHDO8qKIiSTzzU23tZvVJSzwo75PNNllfswRDJ4ge4sbhp419LAzzitN6KV4XgV1O3OMgdqrKxXGwGNUC5/c0e0a/ktY2UzLERzyO9BbHqc9mSrsDszR9SuNJmWO3n9N9y7dx781Voujel/qHa4ClnYkYaqre3Pqzh5b1sE7jikyXZjKyreOyjtSTYrITwMbXJkjpv9RmsWImUmMjAB8VS/wBQNQ/iOu/xBHZllGMeBTKWg3qpGeaNNZWdvaercqp+AaqMJEPM9S4zGU6lQ0zWToGqfVqfWiI2yRkcGhfWV3ZX1wb/AE7EJmXLRkdqldUzwTXJjt4VC/OKr2oL6cSswx+Kyb1Q28lmmmQzL3AWZFc5jz5JqZpUtxFdRtFlSHBB+K7HGxw3bc3+KMQ2ieqsaH3Nyf3oqqWGpBcDuW3Uutby4s1hlJdwoXJqvW+p3sZLLFnDZOKm/wAPT6YE4JHY1N0+C3WMlo1yoyTjvRsbAFZ2IndeGgy3kv5HkY7EV/HeitpLgBbmX3MMABTUkrEFUqirnk8U9o0P1M7TuoaPO1DWpVWF63E3cag5tPtruQB3nAPA2nFdfR7REIl+pJPAwwqzrFCr52jaG80zCBLdSYAaNG4yKYWhD2YA3MBK+NJs4zhUnJYcEsKftdLs02s1tJK2cnmjR2O7MEC5bAH/ABU+dYrOzWTC/k0VaUEH7rEwbBZQRI030e4v2384qBfWkJkJEC7m4ypxUw3b3CGONztLcYqdp2mmQgOpdicKal6kI6EnmR5gKTSIoyFEErF//IVYtF6EubtF9KwUu/8AU4NXjpXpqO/li9SHJQ85+KuPXt1LoXT0H8PhQTTvsTbwVPHNZttiq/AdmPU1cxuY11j09B05bRwSRQTX7dokGSP3oYmj6/Jao6xw2rHkjbkgVoMekSTyDU9SYS3T4GT+KYvJffIhBz24NOLi/Hk0YWvUpcfTutTwsf4vKo87Mc09F0DcSJGLjVrtAx3HBAzj+1XbQrW2lT1WnWMRjDYPBpWtaoPWigjTMa9mqwqTzCFQBAem/pzbgiVL+4aUcKXcGrTo3Tx05VS5it7zdxuYHNI0e+EUhkkwcNkD+1WHR3m1tkjtVUwBsyy/B8iosRUXZkLWCexCvT3TWjOBO2nICO470D6/6fsoiZreJIlP9K1bLrULLRYfp43aZwOw8VmvWXUsRk+ovL1EQdoweayK0tazY8QWU1arxAgS6sohGrTQnA7HNDbm50+349uR4oBrnVV9qDelp0Mm0HAc0Hg0rUrhzLeXOzd3Ga0Rb3pRuZgTf3E2msQx3e6ZhtXkY81A13qR72UqhxHnwe1VJY7yZfVJwKXDZzMvvlIBPFYdmRY68SZriitP9Sfd6iu8bcM1Q3dr2UyP7Y0FShZwwgcFm/NMThfTZFGB3NKgAdQoEaj2meMg5UHsKNacqC53kjGPPzQXT19WfJGxVHA+aO2UIl24Bxnd/wCqbp2YO0wuFVtyK3B+0Gn7WMJHsZuWz2pFuxjGAqu3YE0tLO8lKCeQRpk5x5rSBaIHUbvPUkcQocE+3H4qzWVtHZaUkCghwM5/NCYYI7OSO4UbgO5PJqfLfC5lCZwg4XFGqBJ7gGOz1Ow+oYgSR93Oabe5MEbxFO3kdzRO2gjWFxIVJHPeqxqepRJdsGbHP20wQUA3Kf6OoR0yaNzukPu3HC/8VH1y7e4VLWI5Ltg/gVFsW3Tm4CsEPYYojb6eY5fqAwx35qwcMvESOGo7Y2f0VjbmQHaTy1XLRIRsiZGXvxVdvTBPZLbEsWAByP3o7oZhjaFXmwQAapfYaq5K/I6mqdHQtaRieVQxb48Vn3V/Ukmr9ZzWmwiG1P8ALXPBNWfT7yadjbRuT7fZ8Vkur2Wo9Na9Ld6kEKzSEqVPNZOFaj5HJps16CaEKa7qmo+r/KZ1AGMDtUeL1bxUa4keMkgMwNVrUupWluHRBxnJNOwa2kkQV2YDOa23uQ9bhUrJlyLLHOtna5WFTljn7vzQjqHXFW7WAMPTQHJ85qt3OutbGSb1yykkBR3qtTalPcXBMcZIJ5Ld6XOQi9LCFAOzLtc9U+haERSAFhwSfNaHoHWVronQEFnC269uAHbHkmsOsLBtRkRZC2xW3EYq4RGC1txEAC4X2n4ApRlsyG+XiKXZK1jiJP1fWuoL5m3XvpKx7DvQOazDSb7mR52HPJ8157h5pVVjuJPFSJM5CgkfkU9XWutCZTOT4nkVjGqogAB4wO1R79pYl3SOcUUtwI19zhcc5NDruK41O89OE/y17nHFEtAVevMEjdyqW9j6kB2jA/Ir30DLdRqWBBGe3arBLcQwQMAu4j/aguoz3cbJPbKSHOCMdq8t7bEzY5/uRL2Mq8hK58CoEls8kPI4HLNVmktciJpm3FhkioGrxYgYIdg8gVJq15nLZqCdMtd29zk8bV/ejuj2cjKOSNv3ftTelLCbUbCPb3FTYbyO2BRn798U/RSB3BW2Enqdb04LqNN5O4855opdSiOQKp9uB3qqXWo7boej7uaI3N+7wII4yXOMmnK2H3F3QmWC1aCVG3t7vFCr13iuU9MY5w2D5pFqbiWMkOUb4xUm3sWI9WRssPFFd1A2INRo6MelmuUhIViCRzmhltpUs13JNN7mPIJFG4kUL/MkzkYqTGGkhAQgbR3A5NCa4ONmQRxPUVaxRwwhMjdtPH/NLBAbHqBccYphIbxyGMTqwHfHFOx2sxYM3L+RUi7Y+IlCh/clqYlg9NSplP4p+CO5WRW9PG0d27VDZ0sZopLoqoJycmoPVnViTZgtmVIiMBl80O25VTbmWWl2OhLfpvUEdvde+c7l4Gw9jVW/WW9OpWFvc28zepExLAnxiqRc661s6rANzMeWJqYbkXsUYm9SQs3tjXnJrzluS7PyQaE2Ka/bHylb0u+klk2yhizcc9v71YtAiv8AUpfprKAzP5CjgVculugbnVZY5p7VbO2HudiOSDWz6T0ppnTtkDpdqikKDIxHLH5p6rLB1uMliB1MS0H9Pbi+1ONL6UQKvJB+fiiPVvSmnaCFWPErvwT8VoOp31rY/UuQiylvbWc9RXjXmqRRtJvyQxA54puti9nQmbfawB2Ymz0+KKBTGmPb3qFcWimRmyQcGjRfbAwwduPaRQ+8kdQAqdx3NbzY447mQbCzQdZ24VvWc/gUs+0g7sEDIp9ii7YzkHvUW5t3kOfUCj4oWvbhN7kd5Zby7WDd55Io/aL6KCFML8mmdM02O1i3nJkkGQa7Mywg7mJNWTvswbnfQlHv763aIjOcHg5xVgshB/CYp5ZUDY4FCn6Lit5wr3jzY5IIxSr7SgYhCkjIvYANmsWqplXualjAnqMaprVpDKRBIGOOar17qrXDkRAvI3YAURl0e1F0tuitI2OTR2x0azs1V0iUuPJoQoZ2lzYoEDaTp99HalyQjSeDTM+j3A3NJdHax5q0lWZWPbA4qJJHJI6RY4J5plviNRb3NmDrPR4oow75Jz5opHbwpk4BOPmpU8E0W1ZBgftTaRIzkFuPn4oaszHQEsTobirYZQFDtY+MVIignkcZBBNMW9zbRTxIzjG7vRDqjqKx0+3VLco0vnFFarS8mMCCxOhJFppsXrqZpBwckZp7Vr/RdMjAjcFyOeazu66nuX3mPcWPxQyL6vUrtUdm55IzS72bGkEYXHI7aaJP1pZyQIqSKNgyRnvQOf8AUBz6ogjVPAOKAXWiiJzkHn4pMGjQod7k4Jxg1Ja0roSwrrHcZ1DWL7U5w8sjt+M8VGMk82FRWbb2GOKtdvoqREFkXa68cVKs7CCAoyoCc4xQjik9tCe+oGgIB0vpy4ulW6lcqqncVrYv0d6StmLa5cRiUdkVhwPk1TZWlEDw2pCsw7Yrdf0ohhj6PtYl2sWXk/mq5daogAl8ZzY3ygTW+utJstaj0SOEs0rCJnA+3NXi+uobLSWldtyqgIJ8jFVDqn9PdMk1g65G7JOrCTH9IIof1h1LarpJthMHZl2nB7YpIBGccI3ZZ7a6lD6n1RrvVLmZ2IiJJAz2FDOmD60kl043e7amfihd/cyXUyW0Sk729x/FWLTFNpEtuigqPIFelxqwxHUw7m8wpdsYlZduRjAFVy+vVUSRlTuHbFTNa1+CznAd0y3HPjiqXdalNqN80enqcA+6Q9smmsjIFfx8ytFOxsywfUj0lcnPFS9NT6y4i2HcAfdVZuo7/wBkAuIx7eSBStFl1SzuGW2kEr570kcgsQNQhqGvM0S+KWVuWlYDgbQT4qn6l1LZrdemyhvkioWsjW9TIW5lKY4wtTemeiPrLlfWDMGHuq1+Q2gFEpVSm/kZZNRjRZSU7nuTQO5QNcks3A+3Hmpt5qtjKBIl2hJ/pzUJQk8nsljIbvz2pYByO4XgVkaytidQZguCBwan3AVNplYAeSaUkcFtPxcocryS3FMNZxXsrM0+6HvwaJpQO5TsmSrRInX2jeAeKfNkBE8/p42dqf0yO2VQIwCF8Z5NK12+iW3FvEvJ74NDtchdqJwX5StX897eXgUNgeMfNQpbPVDKQjDnuDU2yk/69mJGE5xUqS84LKOSaXotew7MJYuhI1voLpZm7u39qc4zVUmtHvL9pmP8vdgc+KtWq6nJ/D2hLjDeM0IgiKwRh8Z4P9669vloS9SkDcjyabHbo0pXIAzRDpiwLZ1BkAXwKTPukPoKRlyBij6J9HbLEhAAA4+TUYo2e5NztqDtRQ+sZUGecAHtTenQPd3pJB2x8nA4qbfOqWrKy+85I/eiWgWhh0471IeUZJx2pvem1AfUiOsswHfaOBXYoVRTjO5e+al7ljZYh45/eo0rSjd6a5/1E1d2BgxsmIVmUARA7mOMmtf0KUabo1uqyFT6X2ntmso0OP6nUoI2OELYar91JdCyto0J9oHtx3paxPcOowjlPEg9T9a6jLFJZessaHKt8j9qzW+vvUlx6p4U8E9+e9ROrNX233tYsc+7NQbFJr66UopC/wCo9qVSoctKIbkzL8oZ0SRoZWuHG4H2ipt7qtxlo7KJjKwwWI4FImWK2WOJCMkjOKdaYrEwUBcdvzW6m1QD7iba5QG+liSZrjUZPVYr9ueKb1m/ttI09EtEVCRkiiV0kihSw9z84/FZ/wDqBex/XCCJ8leCAe1J5AKDYjFH9jajVv1JNNe4diu47QRWn9FBChd1VmZeCaw63Eksyxxj3swCgdyTW/8ASWlnT9IthI26VEyQfJNK47beFy1Cr1DWnaU11cCRYywB/wB60/prRrbTrRp7iIBCuST4qp9ETyC52XCAKDlcVoWvXi2+hTytAXgCc4FAycg+6V3Oxa9jZE+ARfXQb/vyf71Ig1i/jb2XMo8d6G/sMCl54A5q3Jh9zQ4rCR1jUWGDcPx8mrX0Z1nHpto8F9mQt2qiHnOQOa8pAJPJHzU+4QPMG1StNWj/AFBsLdD6UfuwaGSdZQ3NwzsWBIrOm8kdvk11GO4NuPIwas95dOMquKo7mkafqoa43I+7f3qxpMixAk84zWOQXkts4dGOB4q2QdRQz2aK0m18Yaq1txEHbRsw5vN9qGxTmFeSaeuZwkybT7RkY/NBZ+oLGK3ENoMEj3MaHJr8S3kZmJZd2TQi2z3JFXUvWlWcpeOSQ5lkb2/irBdRs0/pqMlBg/vQ7pi8gv7aS7tR9q4BbsDU21ae4LFRgnOWPmmanROtxJwSdR/TNObUr1Fce2I5Y/NWTU7eISxQwHAK7aa0OFbHTBKrh5G7g1F1q7MgVrY+9OW/BonBm+UAx+oKvMQXToxBZeBSfTumtyVUBSOW81zS4luLlrud94B7fmpGq3iQw7ACFIqVrbjszuQGhIFlOtveQNHuyre78mkdadR3VxcqscbbVGKj2MU0zPcyZWKI9/mhd7drNqoVSuMf5qQ5CkGGABbcE2em3ur6iXmUhSeatJtBB6cAHpiMY/8A6p7RFa1PrshdS3jtRu805dSC3IBUr2ArBzPUPxz8THa6mu8SqzSI14skwKhMgDNL+pViQjYP/lRXVNDmkiZkTlT3oDc2TIwSVjn9qLhesPZ5O5W3ECyD1Pq11Gphs4HmkC53Adqqel9LahqsjXF8304clix71oOnwkT/AHe3yMUas4IARvClc/bitFrWtO4IEVdCAui+h9Ltrhbpz6zxkMpbtWm/Ro9ssuVwRxioWl2KTRkJGqjwDR620S9ESruBQNwPxQXtFXYgjyuhro3TbdVzMwLnzVukgZYWtyRLC64Kmq7YW30yIN4BUDPzUnVb6+Nk6WgIlYe0msqwF35bmtQAiaM+Cjy20ivKCCc4wKfUDOSa8VUjIx+a1dCSRuNLgjk13B29uKVweABXgBuyT7a4DUnxEbcjJOBXQg2cA5HenVCnAHauN9pO7Gakym4yQVGO9dRG3YUc+PilsvJyfzSzGQc5+DUESwEbbcw3EFSOMeK9Gp+M+KVtJXG7tzXR244xXanS/fpn1LYabYTadqOVR2DZqzydYaTJcEW0gjRW4Ge4rGcec8mvAMPtYg1xAb6gGoB7mzXfWNtbIUhuM8571Bveu7L6U28T4dzl2FZQPU53Mxz+a4EbkMMA9jTPvkLqCGKo7m4dNXqXOmtPbSq4z7gOTTetzm6mCxqfC4zWX9Ha7LoWpRyq7Nb9pIz2NXO96n00TteQZ9RuQngU3yBrETbH4tuW/XZU0zp9bfI3soLEHvVDguA120u0Ad8mo2s9Ure5LOTxgg+KrFxqssgZUYqmaRtcsdfqN49GvM1HTup7K2gFvdMFOfmrno+pwyQLJFhoz2r5tkkkkbczM3BxzVn6W6tu9MQQvlos5wazMz08XjYHcZUNWfiZ9CvMJLGVo1XcU4/eqXZO2rC6hMW25hbyO9CNO6/tZcK4Zf2qy6JqOnzTtdQMoZvuJ4NYiYj4pJjLv7gAMHR2zo4DqQ44PtqQbCcyoyuwGR4qxtdWUj7sKzZ4JGKc9aFsqFQfmtSj1IKOxM22nRk3RYLn00YAFVIJz3q4DUoLZMABjjNUg3N2kW23kwvkgcVKtrlUi3SSB2xjilsnNDH4w1FWvMMzXxkmMjHaPjNcj1R2voN5PpA84NC0u4pQyEYI5qMLyGIsrypnPFIG+3cKSBP/2Q==";
+const LEAF_GRADCAM = "data:image/png;base64,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";
+let comparisonMode = 'slider'; // 'slider' or 'toggle'
+let sliderPos = 50;
+
+
+const PLANTS = [
+  { id: 'tomato', emoji: '🍅', name: 'Tomato' },
+  { id: 'potato', emoji: '🥔', name: 'Potato' },
+  { id: 'apple', emoji: '🍎', name: 'Apple' },
+  { id: 'grape', emoji: '🍇', name: 'Grape' },
+  { id: 'pepper', emoji: '🫑', name: 'Pepper' },
+];
+
+const HISTORY_ITEMS = [
+  { disease: 'Tomato — Early Blight', confidence: 87, date: 'Today, 9:32 AM', emoji: '🍅', severity: 'high', plantId: 'tomato' },
+  { disease: 'Potato — Late Blight', confidence: 74, date: 'Yesterday', emoji: '🥔', severity: 'high', plantId: 'potato' },
+  { disease: 'Apple — Cedar Rust', confidence: 91, date: 'Mar 14', emoji: '🍎', severity: 'medium', plantId: 'apple' },
+  { disease: 'Grape — Black Rot', confidence: 82, date: 'Mar 12', emoji: '🍇', severity: 'high', plantId: 'grape' },
+  { disease: 'Tomato — Late Blight', confidence: 79, date: 'Mar 10', emoji: '🍅', severity: 'high', plantId: 'tomato' },
+  { disease: 'Pepper — Bacterial Spot', confidence: 68, date: 'Mar 8', emoji: '🫑', severity: 'medium', plantId: 'pepper' },
+];
+
+// ==================== NAVIGATION ====================
+function goTo(screen) {
+  currentScreen = screen;
+  renderScreen();
+  updateNav();
+  updateStatusBarColor();
+}
+
+function updateNav() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+    const icons = item.querySelector('svg');
+    if (icons) {
+      icons.querySelectorAll('[stroke]').forEach(el => {
+        if (!el.getAttribute('stroke').includes('#fff'))
+          el.setAttribute('stroke', 'var(--gray-400)');
+      });
+      icons.querySelectorAll('[fill]:not([fill="none"])').forEach(el => {
+        if (el.getAttribute('fill') !== 'none' && el.getAttribute('fill') !== 'currentColor')
+          el.setAttribute('fill', 'transparent');
+      });
+    }
+  });
+
+  const mapping = { home: 'navHome', history: 'navHistory', garden: 'navGarden', settings: 'navSettings' };
+  const activeNav = mapping[currentScreen] || mapping['home'];
+  const el = document.getElementById(activeNav);
+  if (el) {
+    el.classList.add('active');
+    const icons = el.querySelector('svg');
+    if (icons) {
+      icons.querySelectorAll('[stroke]').forEach(s => {
+        if (!s.getAttribute('stroke').includes('#fff'))
+          s.setAttribute('stroke', 'var(--green-700)');
+      });
+    }
+  }
+}
+
+function updateStatusBarColor() {
+  const bar = document.getElementById('statusBar');
+  if (currentScreen === SCREENS.HOME) {
+    bar.style.background = 'var(--green-50)';
+  } else {
+    bar.style.background = '#fff';
+  }
+}
+
+// Nav event listeners
+document.getElementById('navHome').addEventListener('click', () => goTo(SCREENS.HOME));
+document.getElementById('navHistory').addEventListener('click', () => goTo(SCREENS.HISTORY));
+document.getElementById('navScan').addEventListener('click', () => goTo(SCREENS.CAMERA));
+document.getElementById('navGarden').addEventListener('click', () => goTo(SCREENS.GARDEN));
+document.getElementById('navSettings').addEventListener('click', () => goTo(SCREENS.SETTINGS));
+
+// Update clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('statusTime').textContent =
+    now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ==================== RENDER SCREENS ====================
+function renderScreen() {
+  const area = document.getElementById('screenArea');
+  area.innerHTML = '';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'screen entering';
+  wrapper.style.cssText = 'position:relative;display:flex;flex-direction:column;height:100%;';
+
+  switch(currentScreen) {
+    case SCREENS.HOME: wrapper.innerHTML = renderHome(); break;
+    case SCREENS.CAMERA: wrapper.innerHTML = renderCamera(); break;
+    case SCREENS.LOADING: wrapper.innerHTML = renderLoading(); break;
+    case SCREENS.RESULT: wrapper.innerHTML = renderResult(); break;
+    case SCREENS.HISTORY: wrapper.innerHTML = renderHistory(); break;
+    case SCREENS.GARDEN: wrapper.innerHTML = renderGarden(); break;
+    case SCREENS.SETTINGS: wrapper.innerHTML = renderSettings(); break;
+  }
+
+  area.appendChild(wrapper);
+
+  // Post-render hooks
+  if (currentScreen === SCREENS.LOADING) {
+    startLoadingAnimation();
+  }
+  if (currentScreen === SCREENS.RESULT) {
+    setTimeout(() => {
+      const fill = document.querySelector('.confidence-fill');
+      if (fill) fill.style.width = '87%';
+    }, 100);
+    // Setup comparison slider drag
+    const slider = document.getElementById('comparisonSlider');
+    if (slider) {
+      function updateSlider(clientX) {
+        const rect = slider.getBoundingClientRect();
+        let pct = ((clientX - rect.left) / rect.width) * 100;
+        pct = Math.max(5, Math.min(95, pct));
+        sliderPos = pct;
+        const gradImg = slider.querySelectorAll('img')[1];
+        const line = slider.querySelector('.comparison-slider-line');
+        const handle = slider.querySelector('.comparison-slider-handle');
+        if (gradImg) gradImg.style.clipPath = `inset(0 0 0 ${pct}%)`;
+        if (line) line.style.left = pct + '%';
+        if (handle) handle.style.left = pct + '%';
+      }
+      let dragging = false;
+      slider.addEventListener('mousedown', (e) => { dragging = true; updateSlider(e.clientX); });
+      document.addEventListener('mousemove', (e) => { if (dragging) updateSlider(e.clientX); });
+      document.addEventListener('mouseup', () => { dragging = false; });
+      slider.addEventListener('touchstart', (e) => { dragging = true; updateSlider(e.touches[0].clientX); }, {passive:true});
+      document.addEventListener('touchmove', (e) => { if (dragging) updateSlider(e.touches[0].clientX); }, {passive:true});
+      document.addEventListener('touchend', () => { dragging = false; });
+    }
+  }
+
+  // Attach click handlers
+  attachHandlers();
+}
+
+function attachHandlers() {
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const action = el.getAttribute('data-action');
+      if (action === 'go-camera') goTo(SCREENS.CAMERA);
+      else if (action === 'go-home') goTo(SCREENS.HOME);
+      else if (action === 'go-loading') goTo(SCREENS.LOADING);
+      else if (action === 'go-result') goTo(SCREENS.RESULT);
+      else if (action === 'view-original') { comparisonMode = 'original'; renderScreen(); }
+      else if (action === 'view-slider') { comparisonMode = 'slider'; renderScreen(); }
+      else if (action === 'view-gradcam') { comparisonMode = 'gradcam'; renderScreen(); }
+      else if (action === 'toggle-heatmap') {
+        showHeatmap = !showHeatmap;
+        renderScreen();
+      }
+      else if (action.startsWith('select-plant-')) {
+        selectedPlant = action.replace('select-plant-', '');
+        renderScreen();
+      }
+    });
+  });
+}
+
+// ==================== HOME SCREEN ====================
+function renderHome() {
+  return `
+    <div class="scroll-area" style="flex:1; background: var(--green-50); padding: 0 24px; display:flex; flex-direction:column; overflow-y:auto;">
+      <!-- Header -->
+      <div class="animate-in" style="padding-top: 8px; margin-bottom: 20px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom: 2px;">
+          <svg width="32" height="32" viewBox="0 0 38 38">
+            <circle cx="19" cy="19" r="18" fill="var(--green-700)"/>
+            <path d="M19 8 C12 14, 10 22, 19 30 C28 22, 26 14, 19 8Z" fill="var(--green-200)" stroke="#fff" stroke-width="1"/>
+            <path d="M19 12 L19 26" stroke="#fff" stroke-width="1.2" opacity="0.7"/>
+            <path d="M19 18 L14 14" stroke="#fff" stroke-width="0.8" opacity="0.5"/>
+            <path d="M19 18 L24 14" stroke="#fff" stroke-width="0.8" opacity="0.5"/>
+          </svg>
+          <span style="font-size:26px; font-weight:800; color:var(--green-700); letter-spacing:-0.5px;">GardenGuard</span>
+        </div>
+        <p style="color:var(--gray-600); font-size:15px; font-style:italic; margin-left:40px;">Stop Googling, start knowing.</p>
+      </div>
+
+      <!-- Quick scan card -->
+      <div class="card animate-in delay-1" data-action="go-camera" style="cursor:pointer; background: #fff; padding: 20px; margin-bottom: 16px; transition: transform 0.12s ease, box-shadow 0.15s ease; border-radius: var(--radius-xl);" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+        <div style="display:flex; align-items:center; gap: 16px;">
+          <div style="width:64px; height:64px; border-radius:16px; background: linear-gradient(135deg, var(--green-50), var(--green-100)); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round">
+              <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M3 17v2a2 2 0 002 2h2M17 21h2a2 2 0 002-2v-2"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:17px; font-weight:700; color:var(--gray-900); margin-bottom:2px;">Scan a Leaf</div>
+            <div style="font-size:13px; color:var(--gray-600);">Take a photo to identify plant diseases instantly</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="var(--gray-300)"><path d="M7 4l6 6-6 6" stroke="var(--gray-400)" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+
+      <!-- My Plants -->
+      <div class="animate-in delay-2" style="margin-bottom: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span style="font-size:16px; font-weight:700; color:var(--gray-900);">My Plants</span>
+          <span style="font-size:13px; color:var(--green-700); font-weight:600; cursor:pointer;">See All</span>
+        </div>
+        <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;">
+          <div class="plant-chip ${selectedPlant === 'all' ? 'selected' : ''}" data-action="select-plant-all">
+            <div class="plant-chip-icon" style="font-size:16px; font-weight:700; color:${selectedPlant === 'all' ? 'var(--green-700)' : 'var(--gray-400)'};">All</div>
+            <span class="plant-chip-label">&nbsp;</span>
+          </div>
+          ${PLANTS.map(p => `
+            <div class="plant-chip ${selectedPlant === p.id ? 'selected' : ''}" data-action="select-plant-${p.id}">
+              <div class="plant-chip-icon">${p.emoji}</div>
+              <span class="plant-chip-label">${p.name}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Recent Scans (filtered) -->
+      <div class="animate-in delay-3" style="flex:1;">
+        <div style="font-size:16px; font-weight:700; color:var(--gray-900); margin-bottom:10px;">Recent Scans</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${(() => {
+            const filtered = selectedPlant === 'all'
+              ? HISTORY_ITEMS
+              : HISTORY_ITEMS.filter(h => h.plantId === selectedPlant);
+            if (filtered.length === 0) {
+              return '<div style="text-align:center; padding:24px 16px;"><p style="font-size:14px; color:var(--gray-400);">No scans yet for this plant.</p><p style="font-size:12px; color:var(--gray-300); margin-top:4px;">Tap Scan to diagnose your first leaf!</p></div>';
+            }
+            return filtered.map((h, i) => `
+              <div class="card" data-action="go-result" style="cursor:pointer; padding:14px 16px; display:flex; align-items:center; gap:12px; transition: transform 0.1s ease;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+                <span style="font-size:28px;">${h.emoji}</span>
+                <div style="flex:1;">
+                  <div style="font-size:14px; font-weight:700; color:var(--gray-900);">${h.disease}</div>
+                  <div style="font-size:12px; color:var(--gray-400); margin-top:1px;">${h.date}</div>
+                </div>
+                <span class="severity-badge severity-${h.severity}">
+                  ${h.confidence}%
+                </span>
+              </div>
+            `).join('');
+          })()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== CAMERA SCREEN ====================
+function renderCamera() {
+  return `
+    <div style="flex:1; background:#fff; padding: 0 24px; display:flex; flex-direction:column;">
+      <button class="back-btn" data-action="go-home">
+        <svg width="18" height="18" viewBox="0 0 20 20"><path d="M13 4L7 10l6 6" stroke="var(--green-700)" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+
+      <h2 class="animate-in" style="font-size:20px; font-weight:700; color:var(--gray-900); text-align:center; margin: 8px 0 20px;">
+        Scan Your Leaf
+      </h2>
+
+      <!-- Viewfinder -->
+      <div class="animate-in delay-1" data-action="go-loading" style="
+        width:310px; height:310px; border-radius:var(--radius-xl); margin:0 auto;
+        border:2.5px dashed var(--gray-300); background:var(--gray-50); cursor:pointer;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        transition: border-color 0.2s, background 0.2s, transform 0.12s;
+      " onmouseenter="this.style.borderColor='var(--green-700)';this.style.background='var(--green-50)'"
+         onmouseleave="this.style.borderColor='var(--gray-300)';this.style.background='var(--gray-50)'"
+         onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+
+        <!-- Corner brackets -->
+        <svg width="310" height="310" viewBox="0 0 310 310" style="position:absolute; pointer-events:none;">
+          <path d="M20 60 L20 20 L60 20" stroke="var(--green-700)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+          <path d="M250 20 L290 20 L290 60" stroke="var(--green-700)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+          <path d="M20 250 L20 290 L60 290" stroke="var(--green-700)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+          <path d="M250 290 L290 290 L290 250" stroke="var(--green-700)" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+
+        <svg width="52" height="52" viewBox="0 0 48 48" style="margin-bottom:12px;">
+          <rect x="6" y="12" width="36" height="28" rx="5" fill="none" stroke="var(--gray-400)" stroke-width="2.2"/>
+          <circle cx="24" cy="26" r="8" fill="none" stroke="var(--gray-400)" stroke-width="2"/>
+          <circle cx="24" cy="26" r="3" fill="var(--gray-400)" opacity="0.3"/>
+          <rect x="16" y="8" width="16" height="6" rx="2" fill="none" stroke="var(--gray-400)" stroke-width="1.5"/>
+        </svg>
+        <span style="color:var(--gray-600); font-size:15px; font-weight:500;">Tap to take a photo</span>
+        <span style="color:var(--gray-400); font-size:12px; margin-top:4px;">Center the affected leaf in frame</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="animate-in delay-2" style="display:flex; align-items:center; margin:20px auto; width:310px;">
+        <div style="flex:1; height:1px; background:var(--gray-200);"></div>
+        <span style="padding:0 16px; color:var(--gray-300); font-size:13px;">or</span>
+        <div style="flex:1; height:1px; background:var(--gray-200);"></div>
+      </div>
+
+      <!-- Upload button -->
+      <div class="animate-in delay-3" style="width:310px; margin:0 auto;">
+        <button class="btn-outline" data-action="go-loading">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="var(--green-700)" stroke-width="2" stroke-linecap="round">
+            <path d="M3 14v3a1 1 0 001 1h12a1 1 0 001-1v-3"/>
+            <path d="M10 3v10M6 7l4-4 4 4"/>
+          </svg>
+          Upload from Gallery
+        </button>
+      </div>
+
+      <!-- Tips -->
+      <div class="animate-in delay-4" style="margin-top:auto; padding:16px 0 8px;">
+        <div style="background:var(--green-50); border-radius:var(--radius-md); padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
+          <span style="font-size:18px; flex-shrink:0;">💡</span>
+          <div>
+            <div style="font-size:12px; font-weight:700; color:var(--green-700); margin-bottom:2px;">Tips for best results</div>
+            <div style="font-size:12px; color:var(--gray-600); line-height:1.5;">Use natural lighting, focus on a single leaf, and make sure the affected area is clearly visible.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== LOADING SCREEN ====================
+function renderLoading() {
+  return `
+    <div style="flex:1; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 40px;">
+      <div class="spinner" style="margin-bottom:24px;"></div>
+      <p style="font-size:18px; font-weight:600; color:var(--gray-900); margin-bottom:4px;">Analyzing your plant</p>
+      <p style="font-size:13px; color:var(--gray-400); margin-bottom:32px;">Powered by deep learning</p>
+
+      <div style="width:100%; display:flex; flex-direction:column; gap:10px;" id="loadingSteps">
+        <div class="loading-step" id="step0">
+          <div class="step-dot" style="background:var(--green-100);"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3" fill="var(--green-700)"/></svg></div>
+          <span class="step-label" style="color:var(--gray-400); font-weight:500;">Processing image...</span>
+        </div>
+        <div class="loading-step" id="step1">
+          <div class="step-dot" style="background:var(--gray-100);"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3" fill="var(--gray-300)"/></svg></div>
+          <span class="step-label" style="color:var(--gray-300); font-weight:500;">Detecting disease patterns...</span>
+        </div>
+        <div class="loading-step" id="step2">
+          <div class="step-dot" style="background:var(--gray-100);"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3" fill="var(--gray-300)"/></svg></div>
+          <span class="step-label" style="color:var(--gray-300); font-weight:500;">Generating diagnosis...</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function startLoadingAnimation() {
+  const steps = ['step0', 'step1', 'step2'];
+
+  function activateStep(idx) {
+    if (idx >= steps.length) {
+      setTimeout(() => goTo(SCREENS.RESULT), 400);
+      return;
+    }
+    const step = document.getElementById(steps[idx]);
+    if (!step) return;
+    const dot = step.querySelector('.step-dot');
+    const label = step.querySelector('.step-label');
+    dot.style.background = 'var(--green-100)';
+    dot.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3" fill="var(--green-700)"/></svg>';
+    label.style.color = 'var(--gray-700)';
+    label.style.fontWeight = '600';
+
+    // Complete previous step
+    if (idx > 0) {
+      const prev = document.getElementById(steps[idx-1]);
+      if (prev) {
+        const pDot = prev.querySelector('.step-dot');
+        pDot.style.background = 'var(--green-700)';
+        pDot.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 6l2.5 2.5L9 4" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+        prev.querySelector('.step-label').style.color = 'var(--green-700)';
+      }
+    }
+  }
+
+  setTimeout(() => activateStep(0), 200);
+  setTimeout(() => activateStep(1), 900);
+  setTimeout(() => activateStep(2), 1700);
+  setTimeout(() => {
+    // Complete last step
+    const last = document.getElementById('step2');
+    if (last) {
+      const d = last.querySelector('.step-dot');
+      d.style.background = 'var(--green-700)';
+      d.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 6l2.5 2.5L9 4" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+      last.querySelector('.step-label').style.color = 'var(--green-700)';
+    }
+  }, 2400);
+  setTimeout(() => goTo(SCREENS.RESULT), 2800);
+}
+
+// ==================== RESULT SCREEN ====================
+function renderResult() {
+  return `
+    <div class="scroll-area" style="flex:1; background:var(--gray-50); padding:0 20px; overflow-y:auto;">
+      <button class="back-btn" data-action="go-camera">
+        <svg width="18" height="18" viewBox="0 0 20 20"><path d="M13 4L7 10l6 6" stroke="var(--green-700)" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+        Scan Again
+      </button>
+
+      <!-- Image comparison area -->
+      <div class="animate-in" style="position:relative; margin-bottom:4px;">
+          <div class="comparison-container" id="comparisonSlider">
+            <img src="${LEAF_CLEAN}" alt="Original leaf" style="z-index:1;">
+            <img src="${LEAF_GRADCAM}" alt="Grad-CAM heatmap" style="z-index:2; clip-path: inset(0 0 0 ${sliderPos}%);">
+            <div class="comparison-label comparison-label-left">Original</div>
+            <div class="comparison-label comparison-label-right">AI Vision</div>
+            <div class="comparison-slider-line" style="left:${sliderPos}%;"></div>
+            <div class="comparison-slider-handle" style="left:${sliderPos}%;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M5 3L2 8l3 5" stroke="var(--gray-600)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11 3l3 5-3 5" stroke="var(--gray-600)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          <p style="font-size:11px; color:var(--gray-400); text-align:center; margin-top:6px;">Drag the slider to compare original and AI analysis</p>
+      </div>
+
+      <!-- Diagnosis Card -->
+      <div class="card animate-in delay-2" style="margin-top:14px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span class="severity-badge severity-high">
+            <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="var(--red-600)"/><path d="M6 3.5v3M6 8h.01" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Disease Detected
+          </span>
+          <span style="font-size:11px; color:var(--gray-400);">Today, 9:41 AM</span>
+        </div>
+        <h3 style="font-size:22px; font-weight:800; color:var(--gray-900); margin:6px 0 2px;">
+          Tomato — Early Blight
+        </h3>
+        <p style="font-size:13px; color:var(--gray-600); margin-bottom:6px; font-style:italic;">Alternaria solani</p>
+
+        <!-- Confidence -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
+          <span style="font-size:13px; color:var(--gray-600); font-weight:500;">Confidence</span>
+          <span style="font-size:14px; font-weight:800; color:var(--green-700);">87%</span>
+        </div>
+        <div class="confidence-track">
+          <div class="confidence-fill" style="width:0%;"></div>
+        </div>
+
+        <p style="font-size:13px; color:var(--gray-600); line-height:1.6; margin-top:14px;">
+          Early blight is a common fungal disease that appears as dark brown spots with concentric rings on lower leaves, often spreading upward. It thrives in warm, humid conditions.
+        </p>
+      </div>
+
+      <!-- Treatment Card -->
+      <div class="card animate-in delay-3" style="margin-top:10px; padding:20px;">
+        <h4 style="font-size:16px; font-weight:700; color:var(--green-700); margin:0 0 12px; display:flex; align-items:center; gap:6px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--green-700)" stroke-width="1.8">
+            <path d="M10 2C6 2 3 5 3 9c0 4 3 8 7 9 4-1 7-5 7-9 0-4-3-7-7-7z"/>
+            <path d="M10 6v5M8 9h4"/>
+          </svg>
+          Treatment Plan
+        </h4>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${[
+            { step: '1', text: 'Remove and discard all affected leaves immediately', icon: '✂️' },
+            { step: '2', text: 'Apply a copper-based fungicide to remaining foliage', icon: '💊' },
+            { step: '3', text: 'Improve air circulation and avoid overhead watering', icon: '💨' },
+          ].map(s => `
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <div style="width:28px; height:28px; border-radius:8px; background:var(--green-50); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">${s.icon}</div>
+              <div style="flex:1;">
+                <span style="font-size:13px; color:var(--gray-700); line-height:1.5;">${s.text}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Product Links Card -->
+      <div class="card animate-in delay-4" style="margin-top:10px; padding:20px;">
+        <h4 style="font-size:16px; font-weight:700; color:var(--green-700); margin:0 0 12px; display:flex; align-items:center; gap:6px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--green-700)" stroke-width="1.8">
+            <circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/>
+            <path d="M2 2h2.5l2.7 11h8.6l2.2-7H6.5"/>
+          </svg>
+          Shop Treatment
+        </h4>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${[
+            { name: 'Intratuin', label: 'Copper Fungicide Spray', price: '€8.99', color: '#1B5E20', tag: 'Organic' },
+            { name: 'Bol.com', label: 'Bio Fungicide Concentrate', price: '€12.49', color: '#0D47A1', tag: null },
+            { name: 'Amazon.nl', label: 'Organic Copper Soap', price: '€9.95', color: '#E65100', tag: 'Organic' },
+          ].map((r, i) => `
+            <div class="product-row">
+              <div style="width:40px; height:40px; border-radius:10px; background:${r.color}12; display:flex; align-items:center; justify-content:center; margin-right:12px; flex-shrink:0;">
+                <span style="font-size:14px; font-weight:800; color:${r.color};">${r.name[0]}</span>
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span style="font-size:13px; font-weight:700; color:${r.color};">${r.name}</span>
+                  ${r.tag ? `<span style="font-size:10px; font-weight:600; color:var(--green-700); background:var(--green-50); padding:1px 6px; border-radius:4px;">${r.tag}</span>` : ''}
+                </div>
+                <div style="font-size:12px; color:var(--gray-600); margin-top:1px;">${r.label}</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:14px; font-weight:700; color:var(--gray-900);">${r.price}</span>
+                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="var(--gray-300)" fill="none" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Scan another -->
+      <div class="animate-in delay-5" style="padding:16px 0 20px;">
+        <button class="btn-primary" data-action="go-home">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+            <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M3 17v2a2 2 0 002 2h2M17 21h2a2 2 0 002-2v-2"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+          Scan Another Plant
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== HISTORY SCREEN ====================
+function renderHistory() {
+  return `
+    <div class="scroll-area" style="flex:1; background:#fff; padding:0 24px; overflow-y:auto;">
+      <div class="animate-in" style="padding-top:8px; margin-bottom:18px;">
+        <h2 style="font-size:24px; font-weight:800; color:var(--gray-900);">Scan History</h2>
+        <p style="font-size:13px; color:var(--gray-400); margin-top:2px;">Your recent plant diagnoses</p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        ${HISTORY_ITEMS.map((h, i) => `
+          <div class="card animate-in delay-${i+1}" data-action="go-result" style="cursor:pointer; padding:16px; display:flex; align-items:center; gap:14px; transition: transform 0.1s ease;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+            <div style="width:48px; height:48px; border-radius:12px; background:var(--green-50); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">
+              ${h.emoji}
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:15px; font-weight:700; color:var(--gray-900);">${h.disease}</div>
+              <div style="font-size:12px; color:var(--gray-400); margin-top:2px;">${h.date}</div>
+            </div>
+            <div style="text-align:right;">
+              <span class="severity-badge severity-${h.severity}">${h.confidence}%</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Empty state hint -->
+      <div class="animate-in delay-4" style="text-align:center; padding:32px 20px; color:var(--gray-400);">
+        <p style="font-size:13px;">Scan more plants to build your history.</p>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== GARDEN SCREEN ====================
+function renderGarden() {
+  return `
+    <div style="flex:1; background:#fff; padding:0 24px; display:flex; flex-direction:column;">
+      <div class="animate-in" style="padding-top:8px; margin-bottom:18px;">
+        <h2 style="font-size:24px; font-weight:800; color:var(--gray-900);">My Garden</h2>
+        <p style="font-size:13px; color:var(--gray-400); margin-top:2px;">Track your plants and their health</p>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+        ${PLANTS.map((p, i) => `
+          <div class="card animate-in delay-${i+1}" style="width:calc(50% - 6px); padding:20px 16px; text-align:center; cursor:pointer; transition: transform 0.1s ease;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+            <span style="font-size:40px; display:block; margin-bottom:8px;">${p.emoji}</span>
+            <div style="font-size:15px; font-weight:700; color:var(--gray-900);">${p.name}</div>
+            <div style="font-size:12px; color:var(--gray-400); margin-top:2px;">Healthy</div>
+            <div style="width:100%; height:4px; border-radius:2px; background:var(--gray-100); margin-top:8px; overflow:hidden;">
+              <div style="width:${70 + Math.random()*30}%; height:100%; border-radius:2px; background:var(--green-400);"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="animate-in delay-5" style="margin-top:auto; padding:16px 0;">
+        <button class="btn-outline" style="height:44px; font-size:14px;">
+          <span style="font-size:18px;">+</span> Add a Plant
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== SETTINGS SCREEN ====================
+function renderSettings() {
+  return `
+    <div style="flex:1; background:#fff; padding:0 24px; display:flex; flex-direction:column;">
+      <div class="animate-in" style="padding-top:8px; margin-bottom:18px;">
+        <h2 style="font-size:24px; font-weight:800; color:var(--gray-900);">Settings</h2>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:2px;">
+        ${[
+          { label: 'Notifications', desc: 'Seasonal disease alerts', icon: '🔔' },
+          { label: 'Language', desc: 'English (EU)', icon: '🌍' },
+          { label: 'Premium', desc: 'Free plan — Upgrade for €1.99/mo', icon: '⭐' },
+          { label: 'Privacy', desc: 'Manage your data', icon: '🔒' },
+          { label: 'Help & FAQ', desc: 'Get support', icon: '❓' },
+          { label: 'About', desc: 'GardenGuard v1.0', icon: 'ℹ️' },
+        ].map((item, i) => `
+          <div class="animate-in delay-${Math.min(i+1, 5)}" style="display:flex; align-items:center; padding:14px 0; border-bottom:1px solid var(--gray-100); cursor:pointer; gap:14px;">
+            <div style="width:36px; height:36px; border-radius:10px; background:var(--gray-50); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">${item.icon}</div>
+            <div style="flex:1;">
+              <div style="font-size:15px; font-weight:600; color:var(--gray-900);">${item.label}</div>
+              <div style="font-size:12px; color:var(--gray-400);">${item.desc}</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="var(--gray-300)" fill="none" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ==================== INIT ====================
+renderScreen();
+updateNav();
+updateStatusBarColor();
+</script>
+</body>
+</html>
