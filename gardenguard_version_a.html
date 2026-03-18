@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="color-scheme: light only;">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,10 +37,19 @@
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
     --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
   }
-  html { background: #e8ece8; color-scheme: light; }
+  html { background: #e8ece8; color-scheme: light only; }
+  *, *::before, *::after { color-scheme: light only; }
+  @media (prefers-color-scheme: dark) {
+    html, body, div, span, button, input, select, textarea {
+      color-scheme: light only !important;
+      background-color: inherit;
+      color: inherit;
+    }
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     color: #212121;
+    background: linear-gradient(145deg, #e8ece8 0%, #d3dbd3 50%, #c4cec4 100%) !important;
     font-family: 'DM Sans', sans-serif;
     background: linear-gradient(145deg, #e8ece8 0%, #d3dbd3 50%, #c4cec4 100%);
     min-height: 100vh;
